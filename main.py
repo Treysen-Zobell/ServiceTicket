@@ -1,6 +1,5 @@
 
 import os
-import sys
 import json
 import os.path
 import tkinter
@@ -22,7 +21,7 @@ class FilteringCombobox:
         self.entry.bind('<KeyRelease>', self.check_key)
         self.entry.bind('<Button-1>', lambda e: self.expand())
         self.entry.bind('<Escape>', lambda e: self.collapse())
-        self.entry.bind('<Escape>', lambda e: self.collapse())
+        self.entry.bind('<Tab>', lambda e: self.collapse())
         self.entry_config = []
 
         self.listbox = tkinter.Listbox(self.root)
@@ -147,9 +146,39 @@ class CreateToolTip(object):
             self.tw.destroy()
 
 
+class Checkbox:
+    def __init__(self, root, width=100, height=100):
+        self.value = False
+        self.var = tkinter.StringVar()
+        self.var.set(' ')
+        self.button = tkinter.Button(root, width=width, height=height, textvariable=self.var, command=self.toggle, font='Helvetica 15 bold')
+
+    def toggle(self):
+        if self.var.get() == ' ':
+            self.var.set(u'\u2713')
+            self.value = True
+        else:
+            self.var.set(' ')
+            self.value = False
+
+    def get(self):
+        return self.value
+
+    def pack(self, **kwargs):
+        self.button.pack(kwargs)
+
+    def grid(self, **kwargs):
+        self.button.pack(kwargs)
+
+    def place(self, **kwargs):
+        self.button.place(kwargs)
+
+
 class Gui:
     def __init__(self):
-        with open(os.path.join(os.path.dirname(sys.executable), 'document_ids.json'), 'r') as json_file:
+
+        # with open(os.path.join(os.path.dirname(sys.executable), 'document_ids.json'), 'r') as json_file:
+        with open(os.path.abspath(os.path.join(os.path.dirname(__file__), 'document_ids.json')),  'r') as json_file:
             json_data = json.load(json_file)
             self.user_id = json_data['usersID']
             self.log_id = json_data['logID']
@@ -202,17 +231,23 @@ class Gui:
         self.duration_minutes.place(x=165, y=280, width=75, height=25)
         CreateToolTip(self.duration_minutes, 'Minutes')
 
+        # Call In
+        tkinter.Label(self.frame, text='On-Call Call Out', anchor=tkinter.W).place(x=345, y=280, width=100, height=25)
+        self.call_out = Checkbox(self.frame, width=25, height=25)
+        self.call_out.place(x=445, y=280, width=25, height=25)
+
         # Submit
         self.submit = tkinter.Button(self.frame, text='Submit', borderwidth=2, relief='groove', command=lambda: self.save())
-        self.submit.place(x=340, y=280, width=130, height=25)
+        self.submit.place(x=90, y=315, width=380, height=25)
 
         self.root.bind('<Configure>', lambda e: self.defocus_widgets())
         self.root.bind('<ButtonRelease-1>', lambda e: self.defocus_widgets())
+        self.root.bind('<Tab>', lambda e: self.defocus_widgets())
 
         self.root.mainloop()
 
     def load_users(self):
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(os.path.join(os.path.dirname(sys.executable), 'credentials.json'), SCOPES)
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(os.path.abspath(os.path.join(os.path.dirname(__file__), 'credentials.json')), SCOPES)
         self.client = gspread.authorize(credentials)
         sheet = self.client.open_by_key(self.user_id)
         worksheet = sheet.sheet1
@@ -253,7 +288,14 @@ class Gui:
         worksheet.update_acell(f'D{row}', self.technician.get())
         worksheet.update_acell(f'E{row}', self.solution.get('1.0', 'end-1c'))
         worksheet.update_acell(f'F{row}', f'{self.duration_hours.get()}h{self.duration_minutes.get()}m')
-        worksheet.update_acell(f'G{row}', datetime.datetime.now().strftime('%m/%d/%Y %H:%M:%S'))
+        worksheet.update_acell(f'G{row}', 'Yes' if self.call_out.get() else 'No')
+        worksheet.update_acell(f'H{row}', datetime.datetime.now().strftime('%m/%d/%Y %H:%M:%S'))
+
+        self.name.set('')
+        self.department.set('')
+        self.category.set('')
+        self.technician.set('')
+        self.solution.delete('1.0', 'end-1c')
 
 
 if __name__ == '__main__':
