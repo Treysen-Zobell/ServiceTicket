@@ -22,11 +22,13 @@ class FilteringCombobox:
         self.entry.bind('<KeyRelease>', self.check_key)
         self.entry.bind('<Button-1>', lambda e: self.expand())
         self.entry.bind('<Escape>', lambda e: self.collapse())
+        self.entry.bind('<Escape>', lambda e: self.collapse())
         self.entry_config = []
 
         self.listbox = tkinter.Listbox(self.root)
         self.listbox.bind('<Double-1>', lambda e: self.double_click())
         self.listbox.bind('<Escape>', lambda e: self.collapse())
+        self.listbox.bind('<Tab>', lambda e: self.collapse())
         self.update(self.values)
 
     def expand(self):
